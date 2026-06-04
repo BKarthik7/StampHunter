@@ -1,0 +1,63 @@
+# ─── Dependencies ────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ─── Environment Variables ────────────────────────────────────────
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# ─── Build Outputs ───────────────────────────────────────────────
+dist/
+build/
+out/
+.next/
+web-build/
+
+# ─── Expo / React Native ─────────────────────────────────────────
+mobile/.expo/
+mobile/expo-env.d.ts
+mobile/.metro-health-check*
+mobile/android/
+mobile/ios/
+mobile/.kotlin/
+
+# ─── Certificates & Keys ─────────────────────────────────────────
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# ─── TypeScript ──────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ─── Logs ────────────────────────────────────────────────────────
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+logs/
+
+# ─── OS ──────────────────────────────────────────────────────────
+.DS_Store
+*.pem
+Thumbs.db
+
+# ─── IDE ─────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ─── Prisma ──────────────────────────────────────────────────────
+# Keep migrations, ignore generated client if colocated
+# prisma/generated/
+
+# ─── Misc ────────────────────────────────────────────────────────
+.cache/
+tmp/
