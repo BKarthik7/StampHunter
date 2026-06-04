@@ -1,0 +1,179 @@
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users ───────────────────────────────────────────────────────
+// Clerk manages auth; we sync their user here after first sign-in.
+
+model User {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clerkId     String   @unique @map("clerk_id")
+  username    String   @unique @db.VarChar(30)
+  email       String   @unique @db.VarChar(255)
+  displayName String?  @map("display_name") @db.VarChar(60)
+  bio         String?  @db.Text
+  avatarUrl   String?  @map("avatar_url")
+  isVerified  Boolean  @default(false) @map("is_verified")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  stamps        Stamp[]
+  albums        Album[]
+  likes         Like[]
+  comments      Comment[]
+  notifications Notification[] @relation("NotificationRecipient")
+  actedNotifications Notification[] @relation("NotificationActor")
+  followers     Follow[] @relation("Following")
+  following     Follow[] @relation("Follower")
+
+  @@map("users")
+}
+
+// ─── Stamps ───────────────────────────────────────────────────────
+
+enum Visibility {
+  private
+  public
+}
+
+model Stamp {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String     @map("user_id") @db.Uuid
+  imageUrl     String     @map("image_url")
+  framedUrl    String?    @map("framed_url")
+  caption      String?    @db.Text
+  visibility   Visibility @default(private)
+  lat          Decimal?   @db.Decimal(9, 6)
+  lng          Decimal?   @db.Decimal(9, 6)
+  locationName String?    @map("location_name")
+  takenAt      DateTime   @default(now()) @map("taken_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags         StampTag[]
+  albumEntries AlbumStamp[]
+  likes        Like[]
+  comments     Comment[]
+  notifications Notification[]
+
+  @@index([userId])
+  @@index([visibility])
+  @@index([createdAt(sort: Desc)])
+  @@map("stamps")
+}
+
+model StampTag {
+  id      String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  stampId String @map("stamp_id") @db.Uuid
+  tag     String @db.VarChar(40)
+
+  stamp Stamp @relation(fields: [stampId], references: [id], onDelete: Cascade)
+
+  @@index([stampId])
+  @@index([tag])
+  @@map("stamp_tags")
+}
+
+// ─── Albums ───────────────────────────────────────────────────────
+
+model Album {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  name         String   @db.VarChar(80)
+  coverStampId String?  @map("cover_stamp_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stamps AlbumStamp[]
+
+  @@index([userId])
+  @@map("albums")
+}
+
+model AlbumStamp {
+  albumId  String @map("album_id") @db.Uuid
+  stampId  String @map("stamp_id") @db.Uuid
+  position Int    @default(0)
+
+  album Album @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  stamp Stamp @relation(fields: [stampId], references: [id], onDelete: Cascade)
+
+  @@id([albumId, stampId])
+  @@map("album_stamps")
+}
+
+// ─── Social ───────────────────────────────────────────────────────
+
+model Follow {
+  followerId  String   @map("follower_id") @db.Uuid
+  followingId String   @map("following_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@map("follows")
+}
+
+model Like {
+  userId    String   @map("user_id") @db.Uuid
+  stampId   String   @map("stamp_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stamp Stamp @relation(fields: [stampId], references: [id], onDelete: Cascade)
+
+  @@id([userId, stampId])
+  @@map("likes")
+}
+
+model Comment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  stampId   String   @map("stamp_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  body      String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  stamp Stamp @relation(fields: [stampId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([stampId])
+  @@map("comments")
+}
+
+// ─── Notifications ────────────────────────────────────────────────
+
+enum NotificationType {
+  like
+  comment
+  follow
+  mention
+}
+
+model Notification {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipientId String           @map("recipient_id") @db.Uuid
+  actorId     String           @map("actor_id") @db.Uuid
+  type        NotificationType
+  stampId     String?          @map("stamp_id") @db.Uuid
+  read        Boolean          @default(false)
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  recipient User   @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor     User   @relation("NotificationActor", fields: [actorId], references: [id])
+  stamp     Stamp? @relation(fields: [stampId], references: [id], onDelete: SetNull)
+
+  @@index([recipientId, read])
+  @@map("notifications")
+}

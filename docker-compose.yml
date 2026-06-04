@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: stamphunter-postgres
+    environment:
+      POSTGRES_DB: stamphunter
+      POSTGRES_USER: stamphunter
+      POSTGRES_PASSWORD: stamphunter_dev
+    ports:
+      - "5434:5432"
+    volumes:
+      - stamphunter_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stamphunter"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: stamphunter-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - stamphunter_redis_data:/data
+
+volumes:
+  stamphunter_postgres_data:
+  stamphunter_redis_data:
