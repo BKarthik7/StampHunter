@@ -1,20 +1,17 @@
 import type { Metadata } from 'next';
-import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
-import axios from 'axios';
+import { serverApi } from '@/lib/api';
 import StampDetailClient from './StampDetailClient';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 interface StampPageProps {
   params: { id: string };
 }
 
-// ── Fetch stamp (server-side, no auth — public route) ─────────────
-async function getStamp(id: string, token: string | null) {
+// ── Fetch stamp (server-side, using serverApi) ─────────────
+async function getStamp(id: string) {
   try {
-    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-    const { data } = await axios.get(`${API_URL}/api/stamps/${id}`, { headers });
+    const api = await serverApi();
+    const { data } = await api.get(`/api/stamps/${id}`);
     return data.stamp;
   } catch {
     return null;
@@ -23,9 +20,7 @@ async function getStamp(id: string, token: string | null) {
 
 // ── OG meta per stamp (TICKET-029) ────────────────────────────────
 export async function generateMetadata({ params }: StampPageProps): Promise<Metadata> {
-  const { getToken } = await auth();
-  const token = await getToken();
-  const stamp = await getStamp(params.id, token);
+  const stamp = await getStamp(params.id);
   if (!stamp) return { title: 'Stamp not found — StampHunter' };
 
   const title   = stamp.caption ?? `Stamp by ${stamp.user?.username ?? 'a collector'}`;
@@ -54,9 +49,7 @@ export async function generateMetadata({ params }: StampPageProps): Promise<Meta
 
 // ── Page ──────────────────────────────────────────────────────────
 export default async function StampPage({ params }: StampPageProps) {
-  const { userId: clerkId, getToken } = await auth();
-  const token = await getToken();
-  const stamp = await getStamp(params.id, token);
+  const stamp = await getStamp(params.id);
   if (!stamp) notFound();
 
   // Private stamps only visible to their owner
@@ -67,15 +60,12 @@ export default async function StampPage({ params }: StampPageProps) {
 
   // Get current Clerk user ID to pass down for UI decisions
   let currentUserId: string | null = null;
-  if (clerkId && token) {
-    try {
-      const { data } = await axios.get(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      currentUserId = data.user?.id ?? null;
-    } catch {
-      // Not fatal — currentUserId stays null
-    }
+  try {
+    const api = await serverApi();
+    const { data } = await api.get(`/api/auth/me`);
+    currentUserId = data.user?.id ?? null;
+  } catch {
+    // Not fatal — currentUserId stays null
   }
 
   return (
