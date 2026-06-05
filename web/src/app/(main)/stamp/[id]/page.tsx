@@ -11,9 +11,10 @@ interface StampPageProps {
 }
 
 // ── Fetch stamp (server-side, no auth — public route) ─────────────
-async function getStamp(id: string) {
+async function getStamp(id: string, token: string | null) {
   try {
-    const { data } = await axios.get(`${API_URL}/api/stamps/${id}`);
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+    const { data } = await axios.get(`${API_URL}/api/stamps/${id}`, { headers });
     return data.stamp;
   } catch {
     return null;
@@ -22,7 +23,9 @@ async function getStamp(id: string) {
 
 // ── OG meta per stamp (TICKET-029) ────────────────────────────────
 export async function generateMetadata({ params }: StampPageProps): Promise<Metadata> {
-  const stamp = await getStamp(params.id);
+  const { getToken } = await auth();
+  const token = await getToken();
+  const stamp = await getStamp(params.id, token);
   if (!stamp) return { title: 'Stamp not found — StampHunter' };
 
   const title   = stamp.caption ?? `Stamp by ${stamp.user?.username ?? 'a collector'}`;
@@ -51,11 +54,12 @@ export async function generateMetadata({ params }: StampPageProps): Promise<Meta
 
 // ── Page ──────────────────────────────────────────────────────────
 export default async function StampPage({ params }: StampPageProps) {
-  const stamp = await getStamp(params.id);
+  const { userId: clerkId, getToken } = await auth();
+  const token = await getToken();
+  const stamp = await getStamp(params.id, token);
   if (!stamp) notFound();
 
   // Private stamps only visible to their owner
-  const { userId: clerkId } = await auth();
   if (stamp.visibility === 'private') {
     // We don't have the DB userId here, so we'll let the client handle
     // the auth check. If unauthenticated → client will show 'not found'.
@@ -63,10 +67,10 @@ export default async function StampPage({ params }: StampPageProps) {
 
   // Get current Clerk user ID to pass down for UI decisions
   let currentUserId: string | null = null;
-  if (clerkId) {
+  if (clerkId && token) {
     try {
       const { data } = await axios.get(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${clerkId}` }, // placeholder — client handles actual auth
+        headers: { Authorization: `Bearer ${token}` },
       });
       currentUserId = data.user?.id ?? null;
     } catch {
