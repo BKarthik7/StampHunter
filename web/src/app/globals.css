@@ -1,0 +1,177 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap');
+
+/* ─── Color Palette (Frontend-Spec §2) ─────────────────────────── */
+:root {
+  --color-ink:                 #1A1A1A;
+  --color-paper:               #F7F4ED;
+  --color-paper-dark:          #EDE9DF;
+  --color-stamp-red:           #C0392B;
+  --color-stamp-red-light:     #FADBD8;
+  --color-postmark-blue:       #1B4F8A;
+  --color-postmark-blue-light: #D6EAF8;
+  --color-perforated:          #FFFFFF;
+  --color-muted:               #7F8C8D;
+  --color-border:              #D5CFC3;
+  --color-success:             #27AE60;
+  --color-error:               #E74C3C;
+
+  /* ─── Spacing (Frontend-Spec §7) ─ */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+
+  /* ─── Typography ─ */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-ui:      'Inter', system-ui, sans-serif;
+}
+
+/* Dark mode (Frontend-Spec §2) — stamp frame itself stays white */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper:      #1C1B18;
+    --color-ink:        #F0EDE6;
+    --color-paper-dark: #26241F;
+  }
+}
+
+/* ─── Reset ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+/* ─── Page max-width (Frontend-Spec §7) ─────────────────────────── */
+.page-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 var(--space-xl);
+}
+
+/* ─── Typography helpers ─────────────────────────────────────────── */
+.font-display { font-family: var(--font-display); }
+.font-ui      { font-family: var(--font-ui); }
+
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; }
+h1 { font-size: 32px; }
+h2 { font-size: 22px; font-weight: 600; }
+
+/* ─── Buttons (Frontend-Spec §6) ─────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  outline: none;
+}
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: var(--color-stamp-red);
+  color: #fff;
+  padding: 12px 24px;
+}
+.btn-primary:hover { filter: brightness(1.1); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--color-postmark-blue);
+  border: 1.5px solid var(--color-postmark-blue);
+  padding: 10px 20px;
+}
+.btn-secondary:hover { background: var(--color-postmark-blue-light); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
+  padding: 10px 20px;
+}
+.btn-ghost:hover { background: var(--color-paper-dark); }
+
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-paper-dark);
+  padding: 0;
+}
+
+/* ─── Input fields (Frontend-Spec §6) ───────────────────────────── */
+.input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  background: var(--color-perforated);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--color-ink);
+  transition: border-color 0.15s;
+  outline: none;
+}
+.input:focus { border-color: var(--color-postmark-blue); }
+.input.error  { border-color: var(--color-error); }
+
+/* ─── Tag / Pill (Frontend-Spec §6) ─────────────────────────────── */
+.tag {
+  display: inline-block;
+  background: var(--color-paper-dark);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-ink);
+}
+
+/* ─── Card (Frontend-Spec §6) ───────────────────────────────────── */
+.card {
+  background: var(--color-perforated);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ─── Collection grid (Frontend-Spec §7) ────────────────────────── */
+.stamp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+/* ─── Explore masonry (Frontend-Spec §7) ────────────────────────── */
+.masonry-grid {
+  columns: 2;
+  column-gap: 12px;
+}
+@media (min-width: 768px)  { .masonry-grid { columns: 3; } }
+@media (min-width: 1024px) { .masonry-grid { columns: 4; } }
+.masonry-grid > * { break-inside: avoid; margin-bottom: 12px; }
+
+/* ─── Responsive (Frontend-Spec §9) ────────────────────────────── */
+@media (max-width: 767px) {
+  .page-container { padding: 0 var(--space-md); }
+}
