@@ -8,6 +8,9 @@ import { errorHandler } from './lib/errors.js';
 import { handleMulterError } from './middleware/upload.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import stampsRoutes from './routes/stamps.routes.js';
+import albumsRoutes from './routes/albums.routes.js';
+import socialRoutes from './routes/social.routes.js';
+import feedRoutes from './routes/feed.routes.js';
 
 export function createApp() {
   const app = express();
@@ -37,11 +40,9 @@ export function createApp() {
   // ─── Routes ───────────────────────────────────────────────────
   app.use('/api/auth', authRoutes);
   app.use('/api/stamps', stampsRoutes);
-
-  // Additional routes will be mounted here as they are built:
-  // app.use('/api/albums', albumsRoutes);
-  // app.use('/api/feed', feedRoutes);
-  // app.use('/api/users', usersRoutes);
+  app.use('/api/albums', albumsRoutes);
+  app.use('/api', socialRoutes);      // /api/users/:u/follow, /api/stamps/:id/like, /api/comments/:id
+  app.use('/api/feed', feedRoutes);
 
   // ─── Error Handlers (must be last) ───────────────────────────
   app.use(handleMulterError);
