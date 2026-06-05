@@ -1,45 +1,59 @@
-import { View, Text, StyleSheet } from 'react-native';
-import { useAuth, useUser } from '@clerk/expo';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
+import { StampGrid } from '../../components/stamp/StampGrid';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 
 export default function HomeScreen() {
-  const { user } = useUser();
-
   return (
     <View style={styles.container}>
-      {/* Empty state — replaced by StampGrid once stamps are loaded */}
-      <View style={styles.emptyState}>
-        <Text style={styles.emptyTitle}>Your archive awaits.</Text>
-        <Text style={styles.emptyBody}>
-          Tap the{' '}
-          <Text style={{ color: Colors.stampRed, fontFamily: 'Inter_600SemiBold' }}>+</Text>
-          {' '}button below to stamp your first memory.
-        </Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.heading}>My Collection</Text>
+        <TouchableOpacity
+          style={styles.stampBtn}
+          onPress={() => router.push('/(tabs)/camera')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.stampBtnText}>+ Stamp</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Real stamp grid — cursor-paginated, pull-to-refresh */}
+      <StampGrid />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.paper },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
+  container: {
+    flex:            1,
+    backgroundColor: Colors.paper,
   },
-  emptyTitle: {
-    fontFamily: 'PlayfairDisplay_700Bold',
-    fontSize: 26,
-    color: Colors.ink,
-    textAlign: 'center',
-    marginBottom: Spacing.md,
+  header: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    justifyContent:  'space-between',
+    paddingHorizontal: Spacing.md,
+    paddingTop:      Spacing.lg,
+    paddingBottom:   Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    backgroundColor:   Colors.paper,
   },
-  emptyBody: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 15,
-    color: Colors.muted,
-    textAlign: 'center',
-    lineHeight: 22,
+  heading: {
+    fontFamily: Typography.serifSemiBold,
+    fontSize:   Typography.sectionHeading,
+    color:      Colors.ink,
+  },
+  stampBtn: {
+    backgroundColor: Colors.stampRed,
+    paddingVertical:   8,
+    paddingHorizontal: 16,
+    borderRadius:      6,
+  },
+  stampBtnText: {
+    fontFamily: Typography.sansSemiBold,
+    fontSize:   13,
+    color:      Colors.white,
   },
 });
