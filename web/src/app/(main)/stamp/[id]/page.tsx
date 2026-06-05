@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import { serverApi } from '@/lib/api';
 import StampDetailClient from './StampDetailClient';
 
+export const dynamic = 'force-dynamic';
+
 interface StampPageProps {
   params: { id: string };
 }
