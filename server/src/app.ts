@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import path from 'path';
 import { clerkMiddleware } from '@clerk/express';
 import { env } from './config/env.js';
 import { errorHandler } from './lib/errors.js';
@@ -17,9 +16,7 @@ export function createApp() {
   const app = express();
 
   // ─── Security ─────────────────────────────────────────────────
-  app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }
-  }));
+  app.use(helmet());
   app.use(
     cors({
       origin: [env.CLIENT_WEB_URL, 'http://localhost:3000', 'http://localhost:19006'],
@@ -34,9 +31,6 @@ export function createApp() {
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-
-  // Serve local uploaded files as a fallback for Cloudinary in dev/test
-  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
   // ─── Health check (no auth) ───────────────────────────────────
   app.get('/api/health', (_req, res) => {
