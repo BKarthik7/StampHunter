@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { prisma } from '../config/db.js';
 import { Errors } from '../lib/errors.js';
+import { decodeCursor } from '../lib/pagination.js';
 
 const router = Router();
 
@@ -34,6 +35,69 @@ router.get('/', authenticate, async (req: Request, res: Response, next: NextFunc
       orderBy: { createdAt: 'desc' },
     });
     res.json({ albums });
+  } catch (err) { next(err); }
+});
+
+// ─── GET /api/albums/:id — Get specific album ────────────────────
+router.get('/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const album = await prisma.album.findUnique({
+      where: { id: req.params.id as string },
+      include: {
+        _count: { select: { stamps: true } },
+      },
+    });
+
+    if (!album)                          return next(Errors.albumNotFound());
+    if (album.userId !== req.dbUser!.id) return next(Errors.forbidden());
+
+    res.json({ album });
+  } catch (err) { next(err); }
+});
+
+// ─── GET /api/albums/:id/stamps — Get stamps inside album ─────────
+router.get('/:id/stamps', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const album = await prisma.album.findUnique({
+      where: { id: req.params.id as string },
+    });
+
+    if (!album)                          return next(Errors.albumNotFound());
+    if (album.userId !== req.dbUser!.id) return next(Errors.forbidden());
+
+    const limit = z.coerce.number().int().min(1).max(100).default(20).parse(req.query.limit);
+    const cursor = req.query.cursor as string | undefined;
+
+    let cursorDate: Date | undefined;
+    if (cursor) {
+      const decoded = decodeCursor(cursor);
+      if (decoded) {
+        cursorDate = decoded.createdAt;
+      } else {
+        const parsedDate = new Date(cursor);
+        if (!isNaN(parsedDate.getTime())) {
+          cursorDate = parsedDate;
+        }
+      }
+    }
+
+    const stamps = await prisma.stamp.findMany({
+      where: {
+        albumEntries: {
+          some: { albumId: req.params.id as string },
+        },
+        userId: req.dbUser!.id,
+        ...(cursorDate ? { createdAt: { lt: cursorDate } } : {}),
+      },
+      take: limit + 1,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const hasMore = stamps.length > limit;
+    const items   = hasMore ? stamps.slice(0, limit) : stamps;
+    const nextCursor = hasMore ? items[items.length - 1].createdAt.toISOString() : null;
+
+    res.json({ stamps: items, nextCursor });
   } catch (err) { next(err); }
 });
 

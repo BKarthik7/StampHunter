@@ -136,7 +136,18 @@ router.get(
       const { cursor, limit, tag, album_id, visibility, date_from, date_to } = parsed.data;
       const userId = req.dbUser!.id;
 
-      const cursorDate = cursor ? decodeCursor(cursor)?.createdAt : undefined;
+      let cursorDate: Date | undefined;
+      if (cursor) {
+        const decoded = decodeCursor(cursor);
+        if (decoded) {
+          cursorDate = decoded.createdAt;
+        } else {
+          const parsedDate = new Date(cursor);
+          if (!isNaN(parsedDate.getTime())) {
+            cursorDate = parsedDate;
+          }
+        }
+      }
 
       const stamps = await prisma.stamp.findMany({
         where: {
