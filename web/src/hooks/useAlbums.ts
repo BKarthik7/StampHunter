@@ -24,6 +24,8 @@ export function useAlbums() {
     try {
       const { data } = await clientApi.get('/api/albums');
       setAlbums(data.albums);
+    } catch (err) {
+      console.error('Failed to fetch albums:', err);
     } finally { setLoading(false); }
   }, [getToken]);
 

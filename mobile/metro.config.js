@@ -22,4 +22,18 @@ config.resolver.nodeModulesPaths = [
 // 3. Disable symlinks to prevent resolution loops in npm workspaces
 config.resolver.disableHierarchicalLookup = false;
 
+// 4. Force a SINGLE copy of React (and friends) into the bundle.
+//    The monorepo root pins react@18 (for the Next.js web workspace); without
+//    this, packages hoisted to the root node_modules resolve react@18 while the
+//    app resolves mobile's react@19 — producing two Reacts and the runtime error
+//    "Cannot read property 'ReactCurrentDispatcher' of undefined".
+config.resolver.extraNodeModules = {
+  ...config.resolver.extraNodeModules,
+  react: path.resolve(__dirname, 'node_modules/react'),
+  'react-native': path.resolve(__dirname, 'node_modules/react-native'),
+  // react-dom@18 (pulled transitively by @clerk/expo) crashes when evaluated
+  // against react@19; force the matching react-dom@19 installed in mobile/.
+  'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+};
+
 module.exports = config;

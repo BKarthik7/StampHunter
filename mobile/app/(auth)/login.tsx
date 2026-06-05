@@ -8,18 +8,18 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { useSignIn, useClerk } from '@clerk/expo';
+import { useSignIn } from '@clerk/expo';
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Colors, Spacing } from '../../constants/theme';
 
 export default function LoginScreen() {
-  // @clerk/expo v3: useSignIn() returns { signIn, errors, fetchStatus }
-  // setActive lives on useClerk() instead.
+  // @clerk/expo v3 custom flow: useSignIn() returns { signIn, errors, fetchStatus }.
+  // signIn.password() takes the identifier + password together and creates the
+  // sign-in internally; signIn.finalize() activates the resulting session.
   const { signIn, fetchStatus } = useSignIn();
-  const { setActive }           = useClerk();
 
-  const [email,    setEmail]    = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
@@ -30,24 +30,24 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      // Step 1 — create a sign-in with identifier
-      const { error: createErr } = await signIn.create({
-        identifier: email.trim().toLowerCase(),
+      // Attempt the password factor — identifier + password in a single call.
+      const { error: passErr } = await signIn.password({
+        identifier: identifier.trim(),
+        password,
       });
-      if (createErr) { setError(createErr.message); return; }
-
-      // Step 2 — attempt password factor
-      const { error: passErr } = await signIn.password({ password });
       if (passErr) { setError(passErr.message); return; }
 
-      // Step 3 — if status complete, finalise session
-      if (signIn.status === 'complete' && signIn.createdSessionId) {
-        await setActive({ session: signIn.createdSessionId });
-        // AuthGuard in _layout.tsx will redirect to (tabs) automatically
+      // Activate the session; AuthGuard in _layout.tsx redirects to (tabs).
+      if (signIn.status === 'complete') {
+        const { error: finalErr } = await signIn.finalize();
+        if (finalErr) { setError(finalErr.message); return; }
+      } else {
+        // e.g. needs_second_factor / needs_client_trust — not handled yet.
+        setError('Additional verification is required to sign in.');
       }
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string }[] };
-      setError(clerkErr.errors?.[0]?.message ?? 'Invalid email or password');
+      setError(clerkErr.errors?.[0]?.message ?? 'Invalid credentials');
     } finally {
       setLoading(false);
     }
@@ -70,16 +70,15 @@ export default function LoginScreen() {
           <Text style={styles.formTitle}>Sign in</Text>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>Email or username</Text>
             <TextInput
               style={[styles.input, error ? styles.inputError : null]}
-              placeholder="you@example.com"
+              placeholder="you@example.com or username"
               placeholderTextColor={Colors.muted}
-              value={email}
-              onChangeText={setEmail}
+              value={identifier}
+              onChangeText={setIdentifier}
               autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
+              autoComplete="username"
             />
           </View>
 

@@ -103,7 +103,7 @@ export default function CameraScreen() {
         // Reset state and go back to collection
         setImageUri(null); setCaption(''); setTags('');
         setVisibility('private'); setPunchGo(false);
-        router.replace('/(tabs)/');
+        router.replace('/(tabs)');
       }, 1000);
     } catch (err: any) {
       Alert.alert(

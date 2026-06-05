@@ -38,7 +38,7 @@ export default function SignupScreen() {
     return Object.keys(e).length === 0;
   };
 
-  // ── Step 1: create sign-up + send email code ───────────────────
+  // ── Step 1: create sign-up + auto-complete if no verification needed ─
   const handleSignup = async () => {
     if (fetchStatus === 'fetching' || !validate()) return;
     setLoading(true);
@@ -58,9 +58,19 @@ export default function SignupScreen() {
         return;
       }
 
-      // Send verification code via sign-up verifications
-      await signUp.verifications.sendEmailCode();
-      setPendingVerification(true);
+      // If sign-up is immediately complete (no verification required)
+      if (signUp.status === 'complete') {
+        const { error: finalErr } = await signUp.finalize();
+        if (finalErr) { setErrors({ general: finalErr.message }); return; }
+
+        if (signUp.createdSessionId) {
+          await setActive({ session: signUp.createdSessionId });
+        }
+      } else {
+        // Fallback: send verification code via sign-up verifications if required
+        await signUp.verifications.sendEmailCode();
+        setPendingVerification(true);
+      }
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string; meta?: { paramName?: string } }[] };
       const firstErr = clerkErr.errors?.[0];

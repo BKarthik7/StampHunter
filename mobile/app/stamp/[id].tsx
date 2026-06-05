@@ -97,7 +97,7 @@ export default function StampDetailScreen() {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
           await api.delete(`/api/stamps/${id}`);
-          router.replace('/(tabs)/');
+          router.replace('/(tabs)');
         },
       },
     ]);
