@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { StampFrame } from '@/components/stamp/StampFrame';
 import { clientApi, setClientToken } from '@/lib/client-api';
+import { useAlbums } from '@/hooks/useAlbums';
+import { AddToAlbumModal } from '@/components/album/AlbumComponents';
 
 interface Stamp {
   id:           string;
@@ -50,6 +52,8 @@ export default function StampDetailClient({
   const [error,       setError]       = useState<string | null>(null);
 
   const isOwner = stamp?.user.id === currentUserId;
+  const { albums, addStamp } = useAlbums();
+  const [showAddToAlbum, setShowAddToAlbum] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -218,12 +222,22 @@ export default function StampDetailClient({
 
           {/* Owner actions */}
           {isOwner && !editing && (
-            <div style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-lg)' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-lg)', flexWrap: 'wrap' }}>
               <button className="btn btn-ghost" onClick={startEdit}>✏ Edit</button>
+              <button className="btn btn-ghost" onClick={() => setShowAddToAlbum(true)}>📁 Add to Album</button>
               <button className="btn btn-ghost" onClick={handleDelete} style={{ color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>
                 🗑 Delete
               </button>
             </div>
+          )}
+
+          {showAddToAlbum && (
+            <AddToAlbumModal
+              albums={albums}
+              stampId={stampId}
+              onAdd={async (albumId) => { await addStamp(albumId, stampId); }}
+              onClose={() => setShowAddToAlbum(false)}
+            />
           )}
 
           {/* Edit form */}

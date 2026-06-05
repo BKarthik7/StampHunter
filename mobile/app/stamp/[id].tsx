@@ -8,6 +8,7 @@ import { useAuth, useUser } from '@clerk/expo';
 import { StampFrame } from '../../components/stamp/StampFrame';
 import { api, setToken } from '../../lib/api';
 import { Colors, Typography, Spacing, Radius } from '../../constants/theme';
+import { useAlbums, AddToAlbumModal } from '../../components/album/Albums';
 
 interface Stamp {
   id:           string;
@@ -42,6 +43,8 @@ export default function StampDetailScreen() {
   const [submitting,  setSubmitting]  = useState(false);
 
   const isOwner = stamp?.user.username === user?.username;
+  const { albums, addStamp } = useAlbums();
+  const [showAddToAlbum, setShowAddToAlbum] = useState(false);
 
   const load = useCallback(async () => {
     const token = await getToken();
@@ -160,12 +163,23 @@ export default function StampDetailScreen() {
           )}
           {isOwner && (
             <>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => setShowAddToAlbum(true)}>
+                <Text style={styles.actionText}>📁 Album</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={confirmDelete}>
                 <Text style={[styles.actionText, { color: Colors.error }]}>🗑 Delete</Text>
               </TouchableOpacity>
             </>
           )}
         </View>
+
+        <AddToAlbumModal
+          visible={showAddToAlbum}
+          albums={albums}
+          stampId={id}
+          onAdd={async (albumId) => addStamp(albumId, id)}
+          onClose={() => setShowAddToAlbum(false)}
+        />
 
         {/* Comments */}
         <View style={styles.commentsSection}>
