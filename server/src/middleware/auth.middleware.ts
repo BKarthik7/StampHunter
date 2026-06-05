@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { requireAuth } from '@clerk/express';
+import { requireAuth, getAuth } from '@clerk/express';
 import { prisma } from '../config/db.js';
 import { Errors } from '../lib/errors.js';
 
@@ -29,7 +29,7 @@ export const clerkAuth = requireAuth();
  */
 export async function resolveDbUser(req: Request, res: Response, next: NextFunction) {
   try {
-    const clerkId = req.auth?.userId;
+    const clerkId = getAuth(req).userId;
     if (!clerkId) {
       return next(Errors.unauthorized());
     }

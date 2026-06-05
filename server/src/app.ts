@@ -7,6 +7,7 @@ import { env } from './config/env.js';
 import { errorHandler } from './lib/errors.js';
 import { handleMulterError } from './middleware/upload.middleware.js';
 import authRoutes from './routes/auth.routes.js';
+import stampsRoutes from './routes/stamps.routes.js';
 
 export function createApp() {
   const app = express();
@@ -35,9 +36,9 @@ export function createApp() {
 
   // ─── Routes ───────────────────────────────────────────────────
   app.use('/api/auth', authRoutes);
+  app.use('/api/stamps', stampsRoutes);
 
   // Additional routes will be mounted here as they are built:
-  // app.use('/api/stamps', stampsRoutes);
   // app.use('/api/albums', albumsRoutes);
   // app.use('/api/feed', feedRoutes);
   // app.use('/api/users', usersRoutes);

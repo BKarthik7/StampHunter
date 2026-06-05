@@ -1,5 +1,7 @@
 import { Router } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import { getAuth } from '@clerk/express';
 import { prisma } from '../config/db.js';
 import { authenticate, clerkAuth } from '../middleware/auth.middleware.js';
 import { Errors } from '../lib/errors.js';
@@ -23,9 +25,9 @@ const syncUserSchema = z.object({
  * Called by the client immediately after Clerk sign-in.
  * Creates or updates our DB user record.
  */
-router.post('/sync', clerkAuth, async (req, res, next) => {
+router.post('/sync', clerkAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const clerkId = req.auth?.userId;
+    const clerkId = getAuth(req).userId;
     if (!clerkId) return next(Errors.unauthorized());
 
     const body = syncUserSchema.safeParse(req.body);
@@ -77,7 +79,7 @@ router.post('/sync', clerkAuth, async (req, res, next) => {
  * GET /api/auth/me
  * Returns the authenticated user's DB record.
  */
-router.get('/me', authenticate, async (req, res, next) => {
+router.get('/me', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.dbUser!.id },
