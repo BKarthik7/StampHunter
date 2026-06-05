@@ -9,21 +9,24 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { useSignUp } from '@clerk/expo';
-import { Link, useRouter } from 'expo-router';
+import { useSignUp, useClerk } from '@clerk/expo';
+import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Colors, Typography, Spacing } from '../../constants/theme';
+import { Colors, Spacing } from '../../constants/theme';
 
 export default function SignupScreen() {
-  const { signUp, setActive, isLoaded } = useSignUp();
-  const router = useRouter();
-  const [email, setEmail] = useState('');
+  // @clerk/expo v3: useSignUp() returns { signUp, errors, fetchStatus }
+  // setActive lives on useClerk(); email OTP sent/verified via signUp.verifications
+  const { signUp, fetchStatus } = useSignUp();
+  const { setActive }           = useClerk();
+
+  const [email,    setEmail]    = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [pendingVerification, setPendingVerification] = useState(false);
-  const [code, setCode] = useState('');
+  const [code,    setCode]    = useState('');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors,  setErrors]  = useState<Record<string, string>>({});
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -35,18 +38,28 @@ export default function SignupScreen() {
     return Object.keys(e).length === 0;
   };
 
+  // ── Step 1: create sign-up + send email code ───────────────────
   const handleSignup = async () => {
-    if (!isLoaded || !validate()) return;
+    if (fetchStatus === 'fetching' || !validate()) return;
     setLoading(true);
     setErrors({});
 
     try {
-      await signUp.create({
+      const { error: createErr } = await signUp.create({
         emailAddress: email.trim().toLowerCase(),
-        username: username.trim().toLowerCase(),
+        username:     username.trim().toLowerCase(),
         password,
       });
-      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      if (createErr) {
+        // Try to map Clerk error to a field
+        const paramName = (createErr as any)?.meta?.paramName as string | undefined;
+        if (paramName === 'username') setErrors({ username: createErr.message });
+        else setErrors({ general: createErr.message });
+        return;
+      }
+
+      // Send verification code via sign-up verifications
+      await signUp.verifications.sendEmailCode();
       setPendingVerification(true);
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string; meta?: { paramName?: string } }[] };
@@ -61,13 +74,20 @@ export default function SignupScreen() {
     }
   };
 
+  // ── Step 2: verify code + finalise ────────────────────────────
   const handleVerify = async () => {
-    if (!isLoaded) return;
+    if (fetchStatus === 'fetching') return;
     setLoading(true);
     try {
-      const result = await signUp.attemptEmailAddressVerification({ code });
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
+      const { error: verifyErr } = await signUp.verifications.verifyEmailCode({ code });
+      if (verifyErr) { setErrors({ code: verifyErr.message }); return; }
+
+      // Finalise creates the session
+      const { error: finalErr } = await signUp.finalize();
+      if (finalErr) { setErrors({ code: finalErr.message }); return; }
+
+      if (signUp.createdSessionId) {
+        await setActive({ session: signUp.createdSessionId });
         // AuthGuard will redirect to (tabs)
       }
     } catch (err: unknown) {

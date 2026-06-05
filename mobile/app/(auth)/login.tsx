@@ -7,33 +7,42 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
-import { useSignIn } from '@clerk/expo';
+import { useSignIn, useClerk } from '@clerk/expo';
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Colors, Typography, Spacing } from '../../constants/theme';
+import { Colors, Spacing } from '../../constants/theme';
 
 export default function LoginScreen() {
-  const { signIn, setActive, isLoaded } = useSignIn();
-  const [email, setEmail] = useState('');
+  // @clerk/expo v3: useSignIn() returns { signIn, errors, fetchStatus }
+  // setActive lives on useClerk() instead.
+  const { signIn, fetchStatus } = useSignIn();
+  const { setActive }           = useClerk();
+
+  const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState('');
 
   const handleLogin = async () => {
-    if (!isLoaded) return;
+    if (fetchStatus === 'fetching') return;
     setError('');
     setLoading(true);
 
     try {
-      const result = await signIn.create({
+      // Step 1 — create a sign-in with identifier
+      const { error: createErr } = await signIn.create({
         identifier: email.trim().toLowerCase(),
-        password,
       });
+      if (createErr) { setError(createErr.message); return; }
 
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
+      // Step 2 — attempt password factor
+      const { error: passErr } = await signIn.password({ password });
+      if (passErr) { setError(passErr.message); return; }
+
+      // Step 3 — if status complete, finalise session
+      if (signIn.status === 'complete' && signIn.createdSessionId) {
+        await setActive({ session: signIn.createdSessionId });
         // AuthGuard in _layout.tsx will redirect to (tabs) automatically
       }
     } catch (err: unknown) {
