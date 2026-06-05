@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import fs from 'fs';
+import path from 'path';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { upload } from '../middleware/upload.middleware.js';
 import { cloudinary } from '../config/cloudinary.js';
@@ -58,7 +60,7 @@ router.post(
       const { caption, visibility, lat, lng, tags, takenAt } = parsed.data;
       const userId = req.dbUser!.id;
 
-      // 1. Upload to Cloudinary
+      // 1. Upload to Cloudinary (with local filesystem fallback on failure)
       let imageUrl: string;
       try {
         const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
@@ -72,8 +74,25 @@ router.post(
           stream.end(req.file!.buffer);
         });
         imageUrl = result.secure_url;
-      } catch {
-        return next(Errors.uploadFailed());
+      } catch (err) {
+        console.warn('Cloudinary upload failed, falling back to local file storage:', err);
+        try {
+          const uploadsDir = path.join(process.cwd(), 'uploads');
+          if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+          }
+          const ext = path.extname(req.file!.originalname) || '.jpg';
+          const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}${ext}`;
+          const filepath = path.join(uploadsDir, filename);
+          
+          fs.writeFileSync(filepath, req.file!.buffer);
+          // Use dynamic req attributes to construct accessible URL
+          imageUrl = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
+          console.log('Saved file locally as fallback:', imageUrl);
+        } catch (fallbackErr) {
+          console.error('Local fallback upload failed:', fallbackErr);
+          return next(Errors.uploadFailed());
+        }
       }
 
       // 2. Reverse geocode (non-fatal if it fails)
