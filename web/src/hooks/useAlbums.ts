@@ -33,8 +33,13 @@ export function useAlbums() {
 
   const create = useCallback(async (name: string) => {
     const { data } = await clientApi.post('/api/albums', { name });
-    setAlbums(prev => [data.album, ...prev]);
-    return data.album as Album;
+    const newAlbum: Album = {
+      ...data.album,
+      stamps: [],
+      _count: { stamps: 0 },
+    };
+    setAlbums(prev => [newAlbum, ...prev]);
+    return newAlbum;
   }, []);
 
   const rename = useCallback(async (id: string, name: string) => {

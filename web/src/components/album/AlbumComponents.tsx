@@ -14,7 +14,7 @@ export function AlbumCard({
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
 }) {
-  const coverUrl = album.stamps[0]?.stamp?.imageUrl;
+  const coverUrl = album.stamps?.[0]?.stamp?.imageUrl;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -52,7 +52,7 @@ export function AlbumCard({
           borderRadius: 999, padding: '2px 8px',
         }}>
           <span style={{ fontFamily: 'var(--font-ui)', fontSize: 11, color: '#fff' }}>
-            {album._count.stamps} stamp{album._count.stamps !== 1 ? 's' : ''}
+            {(album._count?.stamps ?? 0)} stamp{(album._count?.stamps ?? 0) !== 1 ? 's' : ''}
           </span>
         </div>
       </Link>
