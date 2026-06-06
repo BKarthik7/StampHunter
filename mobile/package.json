@@ -36,7 +36,10 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "adb:reverse": "adb reverse tcp:3001 tcp:3001",
+    "prestart": "adb reverse tcp:3001 tcp:3001 || true",
+    "preandroid": "adb reverse tcp:3001 tcp:3001 || true"
   },
   "private": true
 }

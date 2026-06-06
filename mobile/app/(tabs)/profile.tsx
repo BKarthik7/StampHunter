@@ -58,14 +58,18 @@ export default function ProfileScreen() {
   const loadStamps = useCallback(async (reset = false) => {
     if (!username) return;
     try {
+      const token = await getToken();
+      setToken(token);
       const { data } = await api.get(`/api/stamps`, {
         params: { limit: 20, ...(!reset && cursor ? { cursor } : {}) },
       });
       setStamps(prev => reset ? data.stamps : [...prev, ...data.stamps]);
       setCursor(data.nextCursor);
       setHasMore(!!data.nextCursor);
-    } catch {}
-  }, [username, cursor]);
+    } catch (err) {
+      console.warn('Failed to load stamps:', err);
+    }
+  }, [username, cursor, getToken]);
 
   useEffect(() => {
     if (booted.current || !username) return;

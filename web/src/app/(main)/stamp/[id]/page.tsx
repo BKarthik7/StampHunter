@@ -15,7 +15,12 @@ async function getStamp(id: string) {
     const api = await serverApi();
     const { data } = await api.get(`/api/stamps/${id}`);
     return data.stamp;
-  } catch {
+  } catch (err: any) {
+    console.error('[GET_STAMP_ERROR]', {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status,
+    });
     return null;
   }
 }

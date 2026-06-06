@@ -28,10 +28,30 @@ export function StampGrid({ initialStamps = [], initialCursor = null }: StampGri
   const [hasMore,    setHasMore]    = useState(!!initialCursor);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // Wire up Clerk token once
+  // Wire up the Clerk token, and — if SSR returned no stamps (e.g. the
+  // server-side token was unavailable) — fetch the first page client-side so
+  // the grid recovers instead of being stuck on the empty state.
+  const booted = useRef(false);
   useEffect(() => {
-    getToken().then(t => setClientToken(t));
-  }, [getToken]);
+    if (booted.current) return;
+    booted.current = true;
+    (async () => {
+      const token = await getToken();
+      setClientToken(token);
+      if (initialStamps.length > 0) return;
+      setLoading(true);
+      try {
+        const { data } = await clientApi.get('/api/stamps', { params: { limit: 20 } });
+        setStamps(data.stamps);
+        setCursor(data.nextCursor);
+        setHasMore(!!data.nextCursor);
+      } catch (err) {
+        console.error('Failed to load stamps:', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [getToken, initialStamps.length]);
 
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;

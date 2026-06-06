@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { requireAuth, getAuth, clerkClient } from '@clerk/express';
+import { getAuth, clerkClient } from '@clerk/express';
 import { prisma } from '../config/db.js';
 import { Errors } from '../lib/errors.js';
 
@@ -18,10 +18,17 @@ declare global {
 }
 
 /**
- * Requires a valid Clerk session.
- * Attaches req.auth.userId (from Clerk) automatically.
+ * Requires a valid Clerk session. Unlike Clerk's requireAuth(), which
+ * REDIRECTS unauthenticated requests (302) — wrong for a JSON API and silently
+ * swallowed by clients — this returns a 401 so callers get a clear error.
+ * Relies on clerkMiddleware() (mounted globally in app.ts) populating req auth.
  */
-export const clerkAuth = requireAuth();
+export function clerkAuth(req: Request, res: Response, next: NextFunction) {
+  if (!getAuth(req).userId) {
+    return next(Errors.unauthorized());
+  }
+  next();
+}
 
 /**
  * After clerkAuth: resolves the Clerk userId to our DB user row.
